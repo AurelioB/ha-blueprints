@@ -98,7 +98,7 @@ action:
 
 blueprint:
   name: "[BAMBU] Notify on Print Ending (HACS)"
-  source_url: "https://github.com/WolfwithSword/Bambu-HomeAssistant-Flows/blob/main/files/homeassistant/blueprints/nodered/bambu_nr_notify_print_state.yaml"
+  source_url: "https://github.com/AurelioB/ha-blueprints/raw/refs/heads/main/bambu_notify_print_state.yaml"
   author: "WolfwithSword"
   description: |
               Send a notification on print completed or failure
