@@ -1,186 +1,163 @@
 variables:
   status_s: !input print_status
   image_s: !input image_or_camera
-
 mode: single
 trigger:
-  - platform: state
-    entity_id:
-      - !input print_status
-    to: failed
-    from: pause
-  - platform: state
-    entity_id:
-      - !input print_status
-    to: finish
-    from: running
-  - platform: state
-    entity_id:
-      - !input print_status
-    to: failed
-    from: running
-  - platform: state
-    entity_id:
-      - !input print_status
-    to: idle
-    from: running
+- platform: state
+  entity_id:
+  - !input print_status
+  to: failed
+  from: pause
+- platform: state
+  entity_id:
+  - !input print_status
+  to: finish
+  from: running
+- platform: state
+  entity_id:
+  - !input print_status
+  to: failed
+  from: running
+- platform: state
+  entity_id:
+  - !input print_status
+  to: idle
+  from: running
 action:
-  - alias: "Run the custom actions"
-    choose: []
-    default: !input custom_actions
-  - alias: Send notification to each mobile device
-    repeat:
-      for_each: !input notify_devices_mobile
-      sequence:
-        - service: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
-          data:
-            title: >-
-              {{device_attr(status_s, 'name')|replace("_"," ")}}
-            message: >-
-              {% if is_state(status_s, 'finish') or is_state(status_s, 'idle') %}
-                Print Success
-              {% elif is_state(status_s, 'failed') %}
-                Print Failed
-              {% endif %}
-            data:
-              image: >-
-                  {% if image_s %}
-                    /api/{{states[image_s].domain}}_proxy/{{image_s}}
-                  {% else %}
-                    ""
-                  {% endif %}
-  - alias: Send notification to each desktop device
-    repeat:
-      for_each: !input notify_devices_desktops
-      sequence:
-        - service: "notify.{{ device_attr(repeat.item, 'name') | slugify }}"
-          data:
-            title: >-
-              {{device_attr(status_s, 'name')|replace("_"," ")}}
-            message: >-
-              {% if is_state(status_s, 'finish') or is_state(status_s, 'idle') %}
-                Print Success
-              {% elif is_state(status_s, 'failed') %}
-                Print Failed
-              {% endif %}
-  - alias: Send notification to each alexa media device
-    repeat:
-      for_each: !input notify_devices_alexa
-      sequence:
-        - service: "notify.alexa_media_{{ device_attr(repeat.item, 'name') | slugify }}"
-          data:
-            title: >-
-              {{device_attr(status_s, 'name')|replace("_"," ")}} - Print {{states(status_s)}}
-            message: >-
-              {% if is_state(status_s, 'finish') or is_state(status_s, 'idle') %}
-                Bambu {{device_attr(status_s, 'name')|replace("_"," ")}} - Print complete
-              {% elif is_state(status_s, 'failed') %}
-                Bambu {{device_attr(status_s, 'name')|replace("_"," ")}} - Print has failed
-              {% endif %}
-            data:
-              type: "announce"
-  - alias: Send notification to HA Notif Centre
-    choose:
-      - conditions:
-        - condition: template
-          value_template: !input notify_ha_persist
-        sequence:
-          - service: "notify.persistent_notification"
-            data:
-              title: >-
-                {{device_attr(status_s, 'name')|replace("_"," ")}}
-              message: >-
-                {% if is_state(status_s, 'finish') or is_state(status_s, 'idle') %}
-                  Print Success
-                {% elif is_state(status_s, 'failed') %}
-                  Print Failed
-                {% endif %}
-
+- alias: Run the custom actions
+  choose: []
+  default: !input custom_actions
+- alias: Send notification to each mobile device
+  repeat:
+    for_each: !input notify_devices_mobile
+    sequence:
+    - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+      data:
+        title: '{{device_attr(status_s, ''model'')|replace("_"," ")}}'
+        message: "{% if is_state(status_s, 'finish') or is_state(status_s, 'idle')
+          %}\n  Print Success\n{% elif is_state(status_s, 'failed') %}\n  Print Failed\n{%
+          endif %}"
+        data:
+          image: "{% if image_s %}\n  /api/{{states[image_s].domain}}_proxy/{{image_s}}\n{%
+            else %}\n  \"\"\n{% endif %}"
+- alias: Send notification to each desktop device
+  repeat:
+    for_each: !input notify_devices_desktops
+    sequence:
+    - service: notify.{{ device_attr(repeat.item, 'name') | slugify }}
+      data:
+        title: '{{device_attr(status_s, ''model'')|replace("_"," ")}}'
+        message: "{% if is_state(status_s, 'finish') or is_state(status_s, 'idle')
+          %}\n  Print Success\n{% elif is_state(status_s, 'failed') %}\n  Print Failed\n{%
+          endif %}"
+- alias: Send notification to each alexa media device
+  repeat:
+    for_each: !input notify_devices_alexa
+    sequence:
+    - service: notify.alexa_media_{{ device_attr(repeat.item, 'name') | slugify }}
+      data:
+        title: '{{device_attr(status_s, ''model'')|replace("_"," ")}} - Print {{states(status_s)}}'
+        message: "{% if is_state(status_s, 'finish') or is_state(status_s, 'idle')
+          %}\n  Bambu {{device_attr(status_s, 'model')|replace(\"_\",\" \")}} - Print
+          complete\n{% elif is_state(status_s, 'failed') %}\n  Bambu {{device_attr(status_s,
+          'model')|replace(\"_\",\" \")}} - Print has failed\n{% endif %}"
+        data:
+          type: announce
+- alias: Send notification to HA Notif Centre
+  choose:
+  - conditions:
+    - condition: template
+      value_template: !input notify_ha_persist
+    sequence:
+    - service: notify.persistent_notification
+      data:
+        title: '{{device_attr(status_s, ''model'')|replace("_"," ")}}'
+        message: "{% if is_state(status_s, 'finish') or is_state(status_s, 'idle')
+          %}\n  Print Success\n{% elif is_state(status_s, 'failed') %}\n  Print Failed\n{%
+          endif %}"
 blueprint:
-  name: "[BAMBU] Notify on Print Ending (HACS)"
-  source_url: "https://github.com/AurelioB/ha-blueprints/raw/refs/heads/main/bambu_notify_print_state.yaml"
-  author: "WolfwithSword"
-  description: |
-              Send a notification on print completed or failure
-
-              **Version: v1.0.2**
-              [Source](https://github.com/WolfwithSword/Bambu-HomeAssistant-Flows/blob/main/files/homeassistant/blueprints/nodered/bambu_nr_notify_print_state.yaml)
-              [More Blueprints](https://github.com/WolfwithSword/Bambu-HomeAssistant-Flows/tree/main/files/homeassistant/blueprints)
-              [More Information](https://www.wolfwithsword.com/bambulab-homeassistant-blueprints/)
-
-              ### Information
-              This automation will let you send a notification when a print is finished or failed.
-
-              You can send notifications to the following:
-                - Home Assistant Notification Centre
-                - Mobile-App push notifications (via HA mobile_app)
-                - Amazon Alexa Speakers TTS announcements (via alexa media player integration)
-                - Desktop notification centres (via HASS Agent integration)
-
-              For mobile-apps, you can also optionally choose a camera or image entity to send to the push notification. When blank, it will not send an image.
-
-              Additionally, you can now also set any number of custom actions to run on print end.
-
-              ## Requirements
-              - [My Bambu -> HomeAssistant Integration via NodeRed](https://www.wolfwithsword.com/bambulab-to-home-assistant-nodered-configurator/)
-              
+  name: '[BAMBU] Notify on Print Ending (HACS)'
+  source_url: https://github.com/AurelioB/ha-blueprints/raw/refs/heads/main/bambu_notify_print_state.yaml
+  author: WolfwithSword
+  description: "Send a notification on print completed or failure\n\n**Version: v1.0.2**\n[Source](https://github.com/WolfwithSword/Bambu-HomeAssistant-Flows/blob/main/files/homeassistant/blueprints/nodered/bambu_nr_notify_print_state.yaml)\n[More
+    Blueprints](https://github.com/WolfwithSword/Bambu-HomeAssistant-Flows/tree/main/files/homeassistant/blueprints)\n[More
+    Information](https://www.wolfwithsword.com/bambulab-homeassistant-blueprints/)\n\n###
+    Information\nThis automation will let you send a notification when a print is
+    finished or failed.\n\nYou can send notifications to the following:\n  - Home
+    Assistant Notification Centre\n  - Mobile-App push notifications (via HA mobile_app)\n
+    \ - Amazon Alexa Speakers TTS announcements (via alexa media player integration)\n
+    \ - Desktop notification centres (via HASS Agent integration)\n\nFor mobile-apps,
+    you can also optionally choose a camera or image entity to send to the push notification.
+    When blank, it will not send an image.\n\nAdditionally, you can now also set any
+    number of custom actions to run on print end.\n\n## Requirements\n- [My Bambu
+    -> HomeAssistant Integration via NodeRed](https://www.wolfwithsword.com/bambulab-to-home-assistant-nodered-configurator/)\n"
   domain: automation
   input:
     print_status:
       name: Print Status Sensor
-      description: |
-                    Print status sensor from the integration.
-                    NodeRed Integration: `sensor.<model>_<printer_name>_print_status`
+      description: 'Print status sensor from the integration.
+
+        NodeRed Integration: `sensor.<model>_<printer_name>_print_status`
+
+        '
       selector:
         entity:
           filter:
-            - domain: sensor
-              integration: bambu_lab
+          - domain:
+            - sensor
+            integration: bambu_lab
+          multiple: false
     image_or_camera:
-      name: "Optional: Image or Camera Snapshot Entity"
-      default: ""
-      description: "An Image or Camera Entity to send a preview with to mobile-app. Leave empty if you do not want to use this."
-      # Technically should work with hass.agent, but did not for me...
+      name: 'Optional: Image or Camera Snapshot Entity'
+      default: ''
+      description: An Image or Camera Entity to send a preview with to mobile-app.
+        Leave empty if you do not want to use this.
       selector:
         entity:
           filter:
-            - domain: camera
-            - domain: image
+          - domain:
+            - camera
+          - domain:
+            - image
+          multiple: false
     notify_ha_persist:
       name: Send Notification in HomeAssistant Notification Centre
       default: false
       selector:
-        boolean:
+        boolean: {}
     notify_devices_mobile:
       name: Mobile Notify Devices
-      description: "Mobile Devices that can work with the notify service. Sends push notifications."
+      description: Mobile Devices that can work with the notify service. Sends push
+        notifications.
       default: []
       selector:
         device:
           multiple: true
           filter:
-            - integration: mobile_app
+          - integration: mobile_app
     notify_devices_desktops:
       name: Desktop Notify Devices (HASS Agent)
-      description: "Desktop Devices that can work with the notify service. Sends push notifications."
+      description: Desktop Devices that can work with the notify service. Sends push
+        notifications.
       default: []
       selector:
         device:
           multiple: true
           filter:
-            - integration: hass_agent
+          - integration: hass_agent
     notify_devices_alexa:
       name: Alexa Notify Devices (Alexa Media)
-      description: "Alexa Devices that can work with the notify service for tts announcements"
+      description: Alexa Devices that can work with the notify service for tts announcements
       default: []
       selector:
         device:
           multiple: true
           filter:
-            - integration: alexa_media
+          - integration: alexa_media
     custom_actions:
       name: Custom Actions
-      description: "Custom Actions to run. Please provide proper structure, devices, and service data as applicable"
+      description: Custom Actions to run. Please provide proper structure, devices,
+        and service data as applicable
       default: []
       selector:
         action: {}
